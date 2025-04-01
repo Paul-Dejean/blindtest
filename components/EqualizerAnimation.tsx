@@ -1,71 +1,91 @@
-import { useEffect } from 'react';
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Animated, {
-  useAnimatedProps,
-  useSharedValue,
+  Easing,
+  useAnimatedStyle,
+  withDelay,
   withRepeat,
+  withSequence,
   withTiming,
 } from 'react-native-reanimated';
-import Svg, { Rect } from 'react-native-svg';
-
-const AnimatedRect = Animated.createAnimatedComponent(Rect);
 
 interface EqualizerAnimationProps {
   isPlaying: boolean;
+  height?: number;
 }
 
-const createEqualizerAnimation = () => {
-  const duration = 300 + Math.random() * 400; // 300–700ms
-  const minHeight = 10;
-  const maxHeight = 30;
+interface BarProps {
+  index: number;
+  maxHeight: number;
+  color: string;
+}
 
-  return withRepeat(
-    withTiming(maxHeight, { duration }),
-    -1,
-    true // yoyo effect (up and down)
-  );
-};
+function Bar({ index, maxHeight, color }: BarProps) {
+  // Random values for each bar
+  const initialDelay = Math.random() * 1000; // Random initial delay between 0-1000ms
+  const randomDelay = 30 + Math.random() * 40; // Random delay between 30-70ms
+  const randomDuration = 800 + Math.random() * 400; // Random duration between 800-1200ms
+  const randomHeight1 = 0.6 + Math.random() * 0.4; // Random height between 60-100%
+  const randomHeight2 = 0.1 + Math.random() * 0.2; // Random height between 10-30%
 
-export const EqualizerAnimation = ({ isPlaying }: EqualizerAnimationProps) => {
-  const height1 = useSharedValue(10);
-  const height2 = useSharedValue(10);
-  const height3 = useSharedValue(10);
-  const height4 = useSharedValue(10);
-
-  useEffect(() => {
-    if (!isPlaying) {
-      height1.value = 10;
-      height2.value = 10;
-      height3.value = 10;
-      height4.value = 10;
-      return;
-    }
-
-    height1.value = createEqualizerAnimation();
-    height2.value = createEqualizerAnimation();
-    height3.value = createEqualizerAnimation();
-    height4.value = createEqualizerAnimation();
-  }, [isPlaying]);
-
-  const useCreateAnimatedProps = (height: Animated.SharedValue<number>) =>
-    useAnimatedProps(() => ({
-      height: height.value,
-      y: 40 - height.value,
-    }));
-
-  const animatedProps1 = useCreateAnimatedProps(height1);
-  const animatedProps2 = useCreateAnimatedProps(height2);
-  const animatedProps3 = useCreateAnimatedProps(height3);
-  const animatedProps4 = useCreateAnimatedProps(height4);
+  const animatedStyle = useAnimatedStyle(() => ({
+    height: withRepeat(
+      withSequence(
+        withDelay(
+          initialDelay + randomDelay,
+          withTiming(maxHeight * randomHeight1, {
+            duration: randomDuration,
+            easing: Easing.inOut(Easing.ease),
+          })
+        ),
+        withTiming(maxHeight * randomHeight2, {
+          duration: randomDuration,
+          easing: Easing.inOut(Easing.ease),
+        })
+      ),
+      -1,
+      true
+    ),
+  }));
 
   return (
-    <View className="h-12 w-16 flex-row items-center justify-center space-x-1">
-      <Svg height="40" width="60">
-        <AnimatedRect x={0} width="10" fill="#1DB954" rx="2" animatedProps={animatedProps1} />
-        <AnimatedRect x={15} width="10" fill="#1DB954" rx="2" animatedProps={animatedProps2} />
-        <AnimatedRect x={30} width="10" fill="#1DB954" rx="2" animatedProps={animatedProps3} />
-        <AnimatedRect x={45} width="10" fill="#1DB954" rx="2" animatedProps={animatedProps4} />
-      </Svg>
+    <Animated.View
+      style={[
+        styles.bar,
+        {
+          backgroundColor: color,
+        },
+        animatedStyle,
+      ]}
+    />
+  );
+}
+
+export function EqualizerAnimation({ isPlaying, height = 100 }: EqualizerAnimationProps) {
+  return (
+    <View style={styles.container}>
+      {Array.from({ length: 30 }, (_, i) => (
+        <Bar key={i} index={i} maxHeight={height} color="#00ff00" />
+      ))}
     </View>
   );
-};
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    height: '100%',
+    gap: 3,
+  },
+  bar: {
+    width: 4,
+    borderRadius: 2,
+    shadowColor: '#00ff00',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 30,
+    elevation: 15,
+  },
+});

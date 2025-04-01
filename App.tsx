@@ -1,16 +1,13 @@
-import { BlindTestGame } from 'components/BlindTestGame';
 import { StatusBar } from 'expo-status-bar';
-import { View } from 'react-native';
-
+import { AppNavigator } from './navigation/AppNavigator';
 import './global.css';
-import { EqualizerAnimation } from 'components/EqualizerAnimation';
+import { View } from 'react-native';
 
 export default function App() {
   return (
-    <View className="flex-1">
-      <BlindTestGame />
-      <StatusBar style="auto" />
-      {/* <EqualizerAnimation isPlaying={true} /> */}
+    <View className="flex-1 bg-black">
+      <AppNavigator />
+      <StatusBar style="light" />
     </View>
   );
 }
