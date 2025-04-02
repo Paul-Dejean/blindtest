@@ -6,7 +6,7 @@ interface UseTimerProps {
   onTimerEnd?: () => void;
 }
 
-export const useTimer = ({ duration, isRunning, onTimerEnd }: UseTimerProps) => {
+export const useTimer = ({ duration, isRunning = true, onTimerEnd }: UseTimerProps) => {
   const [timeLeft, setTimeLeft] = useState(duration);
 
   // Reset timer when duration changes
@@ -20,7 +20,7 @@ export const useTimer = ({ duration, isRunning, onTimerEnd }: UseTimerProps) => 
 
     const timer = setInterval(() => {
       setTimeLeft((prevTime) => {
-        if (prevTime <= 1) {
+        if (prevTime <= 0) {
           clearInterval(timer);
           onTimerEnd?.();
           return 0;

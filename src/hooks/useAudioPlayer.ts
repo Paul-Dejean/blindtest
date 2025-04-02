@@ -36,7 +36,6 @@ export const useAudioPlayer = ({ onPlaybackStatusUpdate }: UseAudioPlayerProps =
   }, []);
 
   const playTrack = async (previewUrl: string) => {
-    console.log('****** playTrack : ', previewUrl);
     setError(null);
 
     // If we're already playing this track, don't reload it
@@ -74,7 +73,7 @@ export const useAudioPlayer = ({ onPlaybackStatusUpdate }: UseAudioPlayerProps =
   };
 
   const handleStatusUpdate = (status: AVPlaybackStatus) => {
-    console.log('****** handleStatusUpdate : ', status);
+    // console.log('****** handleStatusUpdate : ', status);
     if (!status.isLoaded) {
       if (status.error) {
         setError(`Playback error: ${status.error}`);
@@ -94,7 +93,6 @@ export const useAudioPlayer = ({ onPlaybackStatusUpdate }: UseAudioPlayerProps =
   };
 
   const stopTrack = async () => {
-    console.log('****** stopTrack : ');
     if (!sound) return;
 
     try {

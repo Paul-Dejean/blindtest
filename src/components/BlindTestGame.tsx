@@ -3,6 +3,7 @@ import { ActivityIndicator, Text, TextInput, TouchableOpacity, View } from 'reac
 import { BlindTestGameProvider, useBlindTestGameContext } from '../context/BlindTestGameContext';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { AnimatedVinyl } from './animations/AnimatedVinyl';
+import { AnswerDisplay } from './AnswerDisplay';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'BlindTestGame'>;
 
@@ -33,7 +34,7 @@ const BlindTestGameContent = () => {
 
   return (
     <View className="flex-1 bg-purple-950">
-      <View className="w-full bg-black pt-12">
+      <View className="w-full bg-black pt-4">
         <View className="flex-row items-center justify-between px-8 py-4">
           <TouchableOpacity
             onPress={handleMenuPress}
@@ -57,16 +58,11 @@ const BlindTestGameContent = () => {
               </Text>
             )}
             {gameState.showAnswer && currentTrack && (
-              <View className="items-center rounded-lg bg-black/80 p-6">
-                {gameState.artistCorrect && gameState.titleCorrect && (
-                  <View className="mb-4 items-center">
-                    <Text className="mb-2 text-6xl">🎉</Text>
-                    <Text className="text-2xl font-bold text-green-400">Perfect!</Text>
-                  </View>
-                )}
-                <Text className="mb-2 text-2xl font-bold text-white">{currentTrack.title}</Text>
-                <Text className="text-xl text-white">by {currentTrack.artist.name}</Text>
-              </View>
+              <AnswerDisplay
+                track={currentTrack}
+                artistCorrect={gameState.artistCorrect}
+                titleCorrect={gameState.titleCorrect}
+              />
             )}
           </View>
         </View>

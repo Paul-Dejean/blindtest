@@ -11,12 +11,12 @@ export const getTimeForDifficulty = ({
 
   switch (difficulty) {
     case GameDifficulty.EASY:
-      return 30;
+      return 25;
     case GameDifficulty.MEDIUM:
-      return 20;
+      return 15;
     case GameDifficulty.HARD:
       return 10;
     default:
-      return 30;
+      return 25;
   }
 };

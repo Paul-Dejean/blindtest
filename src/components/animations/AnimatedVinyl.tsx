@@ -20,11 +20,6 @@ export function AnimatedVinyl({ isPlaying = false }: AnimatedVinylProps) {
   const rotation = useSharedValue(0);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 
-  // Debug logging
-  useEffect(() => {
-    console.log('AnimatedVinyl isPlaying:', isPlaying);
-  }, [isPlaying]);
-
   useEffect(() => {
     // Cancel any existing animation
     cancelAnimation(rotation);

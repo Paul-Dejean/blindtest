@@ -32,7 +32,6 @@ interface BlindTestGameContextType {
   timeLeft: number;
 
   trackResults: TrackResult[];
-  isMultiplayer: boolean;
 
   // Derived values
   gameTracks: Track[];
@@ -92,7 +91,6 @@ export function BlindTestGameProvider({ children, config }: BlindTestGameProvide
   // Hooks
   const { tracks, isLoading, error: tracksError } = useTracks({ genre });
   const { isPlaying, error: audioError, playTrack, stopTrack } = useAudioPlayer();
-  console.log('****** is playing : ', isPlaying);
 
   // Combine errors from different sources
   const error = audioError || tracksError;
@@ -165,9 +163,32 @@ export function BlindTestGameProvider({ children, config }: BlindTestGameProvide
   async function nextTrack() {
     const isLastTrack = gameState.currentTrackIndex === gameTracks.length - 1;
 
+    // Get current track
+    const currentTrack = gameTracks[gameState.currentTrackIndex];
+    if (!currentTrack) return;
+
+    // Ensure the current track is saved in results (especially important for the last track)
+    if (!trackResults[gameState.currentTrackIndex]) {
+      updateTrackResult(currentTrack, {});
+    }
+
     if (isLastTrack) {
       // Calculate final score
       const finalScore = gameState.score;
+
+      // Ensure we have results for all tracks
+      let finalTrackResults = [...trackResults];
+
+      // If we're missing the last track result, add it now
+      if (!finalTrackResults[gameState.currentTrackIndex]) {
+        finalTrackResults[gameState.currentTrackIndex] = {
+          track: currentTrack,
+          artistCorrect: gameState.artistCorrect,
+          titleCorrect: gameState.titleCorrect,
+          artistAnswerTime: null,
+          titleAnswerTime: null,
+        };
+      }
 
       // Record game history
       const gameHistory = {
@@ -175,25 +196,24 @@ export function BlindTestGameProvider({ children, config }: BlindTestGameProvide
         score: finalScore,
         totalSongs: gameTracks.length,
         maxScore: gameTracks.length * 3,
-        trackResults: trackResults.map((result) => ({
+        trackResults: finalTrackResults.map((result) => ({
           title: result.track.title,
           artist: result.track.artist.name,
           artistAnswerTime: result.artistAnswerTime,
           titleAnswerTime: result.titleAnswerTime,
         })),
         isMultiplayer,
-        playerScores: isMultiplayer ? { ...playerScores, 2: gameState.score } : undefined,
       };
 
       // Save and navigate to summary
+      console.log('saveGameToHistory');
       await saveGameToHistory(gameHistory);
       navigation.navigate('GameSummary', {
-        tracks: trackResults,
+        tracks: finalTrackResults,
         score: finalScore,
         onPlayAgain: restartGame,
         onBackToMenu: handleBackToMenu,
         isMultiplayer,
-        playerScores: isMultiplayer ? { ...playerScores, 2: gameState.score } : undefined,
       });
     } else {
       // Move to next track
@@ -222,8 +242,17 @@ export function BlindTestGameProvider({ children, config }: BlindTestGameProvide
     const currentTrack = gameTracks[gameState.currentTrackIndex];
     if (!currentTrack) return;
 
-    // Record skip in results
-    updateTrackResult(currentTrack, {});
+    // Calculate elapsed time for the skipped track
+    const elapsedTime = Date.now() - gameState.startTime;
+
+    // Record skip in results with elapsed time
+    updateTrackResult(currentTrack, {
+      artistCorrect: false,
+      titleCorrect: false,
+      // Record the elapsed time as negative to indicate a skip
+      artistAnswerTime: -elapsedTime,
+      titleAnswerTime: -elapsedTime,
+    });
 
     // Show answer
     setGameState((prev) => ({
@@ -234,6 +263,15 @@ export function BlindTestGameProvider({ children, config }: BlindTestGameProvide
     // Wait 2 seconds then move to next track
     return new Promise<void>((resolve) => {
       setTimeout(() => {
+        // Ensure current track is in results before moving to next
+        if (!trackResults[gameState.currentTrackIndex]) {
+          updateTrackResult(currentTrack, {
+            artistCorrect: false,
+            titleCorrect: false,
+            artistAnswerTime: -elapsedTime,
+            titleAnswerTime: -elapsedTime,
+          });
+        }
         nextTrack();
         resolve();
       }, 2000);
@@ -243,7 +281,7 @@ export function BlindTestGameProvider({ children, config }: BlindTestGameProvide
   // Use the timer hook
   const { timeLeft, resetTimer } = useTimer({
     duration: config.songDuration,
-    isRunning: !gameState.showAnswer && isPlaying,
+    isRunning: true,
     onTimerEnd: skipTrack,
   });
 
@@ -298,13 +336,13 @@ export function BlindTestGameProvider({ children, config }: BlindTestGameProvide
       showAnswer: Boolean(isCorrect && prev.titleCorrect),
     }));
 
-    if (isCorrect) {
-      // Record correct answer
-      updateTrackResult(currentTrack, {
-        artistCorrect: true,
-        artistAnswerTime: answerTime,
-      });
+    // Record answer time regardless of correctness
+    updateTrackResult(currentTrack, {
+      artistCorrect: Boolean(isCorrect),
+      artistAnswerTime: answerTime,
+    });
 
+    if (isCorrect) {
       // If both answers correct, move to next track
       if (gameState.titleCorrect) {
         setTimeout(nextTrack, 2000);
@@ -342,13 +380,13 @@ export function BlindTestGameProvider({ children, config }: BlindTestGameProvide
       showAnswer: Boolean(isCorrect && prev.artistCorrect),
     }));
 
-    if (isCorrect) {
-      // Record correct answer
-      updateTrackResult(currentTrack, {
-        titleCorrect: true,
-        titleAnswerTime: answerTime,
-      });
+    // Record answer time regardless of correctness
+    updateTrackResult(currentTrack, {
+      titleCorrect: Boolean(isCorrect),
+      titleAnswerTime: answerTime,
+    });
 
+    if (isCorrect) {
       // If both answers correct, move to next track
       if (gameState.artistCorrect) {
         setTimeout(nextTrack, 2000);
@@ -400,7 +438,6 @@ export function BlindTestGameProvider({ children, config }: BlindTestGameProvide
     timeLeft,
 
     playerScores,
-    isMultiplayer,
 
     // Derived values
     gameTracks,
