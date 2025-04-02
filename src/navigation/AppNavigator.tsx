@@ -4,22 +4,25 @@ import { View } from 'react-native';
 
 import { BlindTestGame } from '../components/BlindTestGame';
 import { GameSummary } from '../components/GameSummary';
-import { Home } from '../components/Home';
-import { Menu } from '../components/Menu';
-import { GameMode } from '../types/game';
+import { History } from '../components/History';
+import { MenusRoot } from '../components/menus';
+import { GameConfig } from '../types/game';
 import { TrackResult } from '../types/track';
 
 export type RootStackParamList = {
-  Home: undefined;
-  Menu: undefined;
-  Game: { mode: GameMode };
+  HomeMenu: undefined;
+  BlindTestGame: {
+    config: GameConfig;
+  };
   GameSummary: {
     tracks: TrackResult[];
     score: number;
     onPlayAgain: () => void;
     onBackToMenu: () => void;
+    isMultiplayer?: boolean;
+    playerScores?: { [key: number]: number };
   };
-  History: undefined;
+  GameHistory: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -29,16 +32,15 @@ export const AppNavigator = () => {
     <View className="flex-1 bg-black">
       <NavigationContainer>
         <Stack.Navigator
-          initialRouteName="Home"
+          initialRouteName="HomeMenu"
           screenOptions={{
             headerShown: false,
             contentStyle: { backgroundColor: 'black' },
           }}>
-          <Stack.Screen name="Home" component={Home} />
-          <Stack.Screen name="Menu" component={Menu} />
-          <Stack.Screen name="Game" component={BlindTestGame} />
+          <Stack.Screen name="HomeMenu" component={MenusRoot} />
+          <Stack.Screen name="BlindTestGame" component={BlindTestGame} />
           <Stack.Screen name="GameSummary" component={GameSummary} />
-          <Stack.Screen name="History" component={History} />
+          <Stack.Screen name="GameHistory" component={History} />
         </Stack.Navigator>
       </NavigationContainer>
     </View>

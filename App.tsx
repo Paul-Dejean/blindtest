@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import { AppNavigator } from './navigation/AppNavigator';
+import { AppNavigator } from './src/navigation/AppNavigator';
 import './global.css';
 import { View } from 'react-native';
 

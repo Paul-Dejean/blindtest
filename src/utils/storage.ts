@@ -5,6 +5,12 @@ export interface GameHistory {
   score: number;
   totalSongs: number;
   maxScore: number;
+  trackResults: {
+    title: string;
+    artist: string;
+    artistAnswerTime: number | null;
+    titleAnswerTime: number | null;
+  }[];
 }
 
 const HISTORY_KEY = '@blindtest_history';

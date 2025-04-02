@@ -1,20 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
+import { GameHistory } from '../utils/storage';
 
-interface GameHistory {
-  timestamp: number;
-  score: number;
-  totalSongs: number;
-  maxScore: number;
-  trackResults: {
-    title: string;
-    artist: string;
-    artistAnswerTime: number | null;
-    titleAnswerTime: number | null;
-  }[];
-}
-
-const HISTORY_KEY = '@game_history';
+const HISTORY_KEY = '@blindtest_history';
 
 export const useGameHistory = () => {
   const [history, setHistory] = useState<GameHistory[]>([]);

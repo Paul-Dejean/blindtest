@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Dimensions, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Animated, {
+  cancelAnimation,
   Easing,
   useAnimatedStyle,
   useSharedValue,
@@ -11,23 +12,46 @@ import Animated, {
 // const { width, height } = Dimensions.get('window');
 const NUM_GROOVES = 50;
 
-export function AnimatedVinyl() {
+interface AnimatedVinylProps {
+  isPlaying: boolean;
+}
+
+export function AnimatedVinyl({ isPlaying = false }: AnimatedVinylProps) {
   const rotation = useSharedValue(0);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 
+  // Debug logging
   useEffect(() => {
-    rotation.value = withRepeat(
-      withTiming(360, {
-        duration: 4000,
-        easing: Easing.linear,
-      }),
-      -1,
-      false
-    );
-  }, []);
+    console.log('AnimatedVinyl isPlaying:', isPlaying);
+  }, [isPlaying]);
+
+  useEffect(() => {
+    // Cancel any existing animation
+    cancelAnimation(rotation);
+
+    // Only animate when isPlaying is true
+    if (isPlaying) {
+      console.log('Starting vinyl animation');
+      rotation.value = withRepeat(
+        withTiming(360, {
+          duration: 4000,
+          easing: Easing.linear,
+        }),
+        -1,
+        false
+      );
+    } else {
+      console.log('Stopping vinyl animation');
+    }
+
+    return () => {
+      cancelAnimation(rotation);
+    };
+  }, [isPlaying]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${rotation.value}deg` }],
+    opacity: 1, // Slightly reduce opacity when buffering
   }));
 
   return (
