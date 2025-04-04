@@ -5,7 +5,7 @@ import { TextInput } from 'react-native';
 import { useAudioPlayer } from '../hooks/useAudioPlayer';
 import { useTracks } from '../hooks/useTracks';
 
-import { GameConfig, GameMode } from '../types/game';
+import { GameConfig, GameMode, GameHistory } from '../types/game';
 import { Track, TrackResult } from '../types/track';
 import { saveGameToHistory } from '../utils/storage';
 import { isCorrectGuess } from '../utils/stringComparison';
@@ -155,7 +155,7 @@ export function BlindTestGameProvider({ children, config }: BlindTestGameProvide
       // Then skip to next track after a delay
       setTimeout(() => {
         skipTrack();
-      }, 3000);
+      }, 2000);
     },
   });
 
@@ -233,26 +233,40 @@ export function BlindTestGameProvider({ children, config }: BlindTestGameProvide
       }
 
       // Record game history
-      const gameHistory = {
+      const gameHistory: GameHistory = {
         timestamp: Date.now(),
         score: finalScore,
         totalSongs: gameTracks.length,
-        maxScore: gameTracks.length * 3,
+        maxScore: gameTracks.length * 2, // Only counting title and artist as 1 point each
         trackResults: finalTrackResults.map((result) => ({
+          // Only save essential data to reduce storage size
           title: result.track.title,
           artist: result.track.artist.name,
-          artistAnswerTime: result.artistAnswerTime,
-          titleAnswerTime: result.titleAnswerTime,
+          artistCorrect: result.artistCorrect,
+          titleCorrect: result.titleCorrect,
         })),
         isMultiplayer,
       };
 
       // Save and navigate to summary
       await saveGameToHistory(gameHistory);
+
+      // Format track results for the summary screen
+      const summaryTracks = finalTrackResults.map((result) => ({
+        track: {
+          title: result.track.title,
+          artist: {
+            name: result.track.artist.name,
+          },
+        },
+        artistCorrect: result.artistCorrect,
+        titleCorrect: result.titleCorrect,
+      }));
+
       router.push({
         pathname: '/game-summary',
         params: {
-          tracks: JSON.stringify(finalTrackResults),
+          tracks: JSON.stringify(summaryTracks),
           score: finalScore.toString(),
           isMultiplayer: isMultiplayer.toString(),
         },
@@ -331,7 +345,7 @@ export function BlindTestGameProvider({ children, config }: BlindTestGameProvide
       await stopTrack();
       await nextTrack();
       resetTimer();
-    }, 3000);
+    }, 2000);
   }
 
   // Function to submit artist guess
@@ -365,7 +379,7 @@ export function BlindTestGameProvider({ children, config }: BlindTestGameProvide
         setTimeout(async () => {
           await nextTrack();
           resetTimer();
-        }, 3000);
+        }, 2000);
       }
     }
   }
@@ -401,7 +415,7 @@ export function BlindTestGameProvider({ children, config }: BlindTestGameProvide
         setTimeout(async () => {
           await nextTrack();
           resetTimer();
-        }, 3000);
+        }, 2000);
       }
     }
   }
@@ -411,11 +425,11 @@ export function BlindTestGameProvider({ children, config }: BlindTestGameProvide
 
   // Add this useEffect to play the track when currentTrack changes
   useEffect(() => {
-    if (currentTrack && currentTrack.preview && !isPlaying) {
+    if (currentTrack && currentTrack.preview) {
       console.log('Playing current track:', currentTrack.title);
       playTrack(currentTrack.preview);
     }
-  }, [currentTrack, isPlaying]);
+  }, [currentTrack]);
 
   return (
     <BlindTestGameContext.Provider

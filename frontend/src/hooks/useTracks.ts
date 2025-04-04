@@ -115,26 +115,20 @@ export const useTracks = ({ genre = 'all', numberOfTracks }: UseTracksProps) => 
   useEffect(() => {
     const fetchItunesData = async () => {
       // Only fetch if tracks, genre, or numberOfTracks have changed
-      console.log('fetching');
-      const limitedTracks = selectedTracks.slice(0, numberOfTracks);
-      if (limitedTracks.length === 0) return;
-      console.log(limitedTracks);
 
       setLoading(true);
       try {
         // Process tracks in batches to avoid overwhelming the API
-        const batchSize = 1;
-        const batches: Track[][] = [];
-        for (let i = 0; i < limitedTracks.length; i += batchSize) {
-          batches.push(limitedTracks.slice(i, i + batchSize));
-        }
-        console.log({ batches });
 
         const allResults: iTunesTrack[] = [];
-        for (const batch of batches) {
-          const batchResults = await Promise.all(batch.map((track) => searchItunes(track)));
-          const validTracks = batchResults.filter((track): track is iTunesTrack => track !== null);
-          allResults.push(...validTracks);
+        for (const track of selectedTracks) {
+          const result = await searchItunes(track);
+          if (result !== null) {
+            allResults.push(result);
+            if (allResults.length === numberOfTracks) {
+              break;
+            }
+          }
 
           // Add a small delay between batches
 

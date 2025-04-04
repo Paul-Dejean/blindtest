@@ -41,3 +41,17 @@ export interface GameConfig {
   songsCount: number;
   songDuration: number;
 }
+
+export interface GameHistory {
+  timestamp: number;
+  score: number;
+  totalSongs: number;
+  maxScore: number;
+  trackResults: {
+    title: string;
+    artist: string;
+    artistCorrect: boolean;
+    titleCorrect: boolean;
+  }[];
+  isMultiplayer: boolean;
+}

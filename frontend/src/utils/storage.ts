@@ -8,31 +8,72 @@ export interface GameHistory {
   trackResults: {
     title: string;
     artist: string;
-    artistAnswerTime: number | null;
-    titleAnswerTime: number | null;
+    artistCorrect: boolean;
+    titleCorrect: boolean;
   }[];
+  isMultiplayer: boolean;
 }
 
 const HISTORY_KEY = '@blindtest_history';
+const MAX_HISTORY_ITEMS = 20; // Maximum number of history items to keep
 
-export const saveGameToHistory = async (game: GameHistory) => {
+export async function saveGameToHistory(gameHistory: GameHistory) {
   try {
+    // Get existing history
     const existingHistory = await getGameHistory();
-    const updatedHistory = [game, ...existingHistory];
-    await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(updatedHistory));
+
+    // Add new game to the beginning of history
+    const updatedHistory = [gameHistory, ...existingHistory];
+
+    // Trim history to prevent storage quota issues
+    const trimmedHistory = updatedHistory.slice(0, MAX_HISTORY_ITEMS);
+
+    // Save the trimmed history
+    await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(trimmedHistory));
     return true;
   } catch (error) {
-    console.error('Error saving game to history:', error);
+    console.error('Error saving game history:', error);
+
+    // If quota exceeded, try removing older entries
+    if (error instanceof Error && error.name === 'QuotaExceededError') {
+      try {
+        const existingHistory = await getGameHistory();
+
+        // Remove half of the older entries
+        const reducedHistory = existingHistory.slice(0, Math.floor(existingHistory.length / 2));
+
+        // Add new game to the reduced history
+        const updatedHistory = [gameHistory, ...reducedHistory];
+
+        // Save the reduced history
+        await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(updatedHistory));
+        return true;
+      } catch (retryError) {
+        console.error('Failed to save even with reduced history:', retryError);
+        return false;
+      }
+    }
+
     return false;
   }
-};
+}
 
-export const getGameHistory = async (): Promise<GameHistory[]> => {
+export async function getGameHistory() {
   try {
-    const history = await AsyncStorage.getItem(HISTORY_KEY);
-    return history ? JSON.parse(history) : [];
+    const historyJson = await AsyncStorage.getItem(HISTORY_KEY);
+    return historyJson ? JSON.parse(historyJson) : [];
   } catch (error) {
     console.error('Error getting game history:', error);
     return [];
   }
-};
+}
+
+export async function clearGameHistory() {
+  try {
+    await AsyncStorage.removeItem(HISTORY_KEY);
+    return true;
+  } catch (error) {
+    console.error('Error clearing game history:', error);
+    return false;
+  }
+}

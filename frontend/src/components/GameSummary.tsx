@@ -1,127 +1,138 @@
-import { useRouter, useLocalSearchParams } from 'expo-router';
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
 
-import { TrackResult } from '../types/track';
+interface TrackResult {
+  title: string;
+  artist: string;
+  artistCorrect: boolean;
+  titleCorrect: boolean;
+}
 
-export default function GameSummary() {
+interface GameSummaryProps {
+  tracks: TrackResult[];
+  score: number;
+  isMultiplayer?: boolean;
+}
+
+export const GameSummary = ({ tracks, score, isMultiplayer = false }: GameSummaryProps) => {
   const router = useRouter();
-  const { tracks, score, isMultiplayer } = useLocalSearchParams<{
-    tracks: string;
-    score: string;
-    isMultiplayer: string;
-  }>();
 
-  const trackResults: TrackResult[] = JSON.parse(tracks || '[]');
-  const finalScore = parseInt(score || '0', 10);
-  const isMultiplayerMode = isMultiplayer === 'true';
+  const handlePlayAgain = () => {
+    router.push('/');
+  };
+
+  const maxScore = tracks.length * 2; // 1 for artist, 1 for title
+  const accuracy = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Game Summary</Text>
-      <Text style={styles.score}>Final Score: {finalScore}</Text>
-      <Text style={styles.mode}>Mode: {isMultiplayerMode ? 'Multiplayer' : 'Single Player'}</Text>
-      <View style={styles.tracksContainer}>
-        {trackResults.map((result, index) => (
+      <Text style={styles.scoreText}>
+        Score: {score} / {maxScore} ({accuracy}%)
+      </Text>
+
+      <ScrollView style={styles.trackList}>
+        {tracks.map((track, index) => (
           <View key={index} style={styles.trackItem}>
-            <Text style={styles.trackTitle}>{result.track.title}</Text>
-            <Text style={styles.trackArtist}>{result.track.artist.name}</Text>
-            <View style={styles.resultContainer}>
-              <Text
-                style={[
-                  styles.resultText,
-                  result.artistCorrect ? styles.correct : styles.incorrect,
-                ]}>
-                Artist: {result.artistCorrect ? 'Correct' : 'Incorrect'}
+            <Text style={styles.trackNumber}>#{index + 1}</Text>
+            <View style={styles.trackDetails}>
+              <Text style={styles.trackTitle}>
+                {track.title}{' '}
+                {track.titleCorrect ? (
+                  <Text style={styles.correct}>✓</Text>
+                ) : (
+                  <Text style={styles.incorrect}>✗</Text>
+                )}
               </Text>
-              <Text
-                style={[
-                  styles.resultText,
-                  result.titleCorrect ? styles.correct : styles.incorrect,
-                ]}>
-                Title: {result.titleCorrect ? 'Correct' : 'Incorrect'}
+              <Text style={styles.trackArtist}>
+                {track.artist}{' '}
+                {track.artistCorrect ? (
+                  <Text style={styles.correct}>✓</Text>
+                ) : (
+                  <Text style={styles.incorrect}>✗</Text>
+                )}
               </Text>
             </View>
           </View>
         ))}
-      </View>
-      <TouchableOpacity style={styles.backButton} onPress={() => router.push('/')}>
-        <Text style={styles.backButtonText}>Back to Menu</Text>
+      </ScrollView>
+
+      <TouchableOpacity style={styles.button} onPress={handlePlayAgain}>
+        <Text style={styles.buttonText}>Play Again</Text>
       </TouchableOpacity>
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
     padding: 20,
+    backgroundColor: '#2C1B47',
   },
   title: {
-    color: '#fff',
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
+    color: '#fff',
     marginBottom: 20,
     textAlign: 'center',
   },
-  score: {
-    color: '#fff',
+  scoreText: {
     fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  mode: {
     color: '#fff',
-    fontSize: 16,
     marginBottom: 20,
     textAlign: 'center',
   },
-  tracksContainer: {
+  trackList: {
     flex: 1,
     marginBottom: 20,
   },
   trackItem: {
-    backgroundColor: '#1a1a1a',
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 10,
-  },
-  trackTitle: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  trackArtist: {
-    color: '#fff',
-    fontSize: 16,
-    marginBottom: 10,
-  },
-  resultContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  resultText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  correct: {
-    color: '#4CAF50',
-  },
-  incorrect: {
-    color: '#F44336',
-  },
-  backButton: {
-    backgroundColor: '#333',
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    borderRadius: 8,
     padding: 15,
-    borderRadius: 10,
+    marginBottom: 10,
     alignItems: 'center',
   },
-  backButtonText: {
+  trackNumber: {
+    fontSize: 18,
+    fontWeight: 'bold',
     color: '#fff',
+    marginRight: 15,
+    width: 30,
+  },
+  trackDetails: {
+    flex: 1,
+  },
+  trackTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  trackArtist: {
     fontSize: 16,
+    color: '#ddd',
+    marginTop: 5,
+  },
+  correct: {
+    color: '#4ade80',
+    fontWeight: 'bold',
+  },
+  incorrect: {
+    color: '#ef4444',
+    fontWeight: 'bold',
+  },
+  button: {
+    backgroundColor: '#8b5cf6',
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 18,
     fontWeight: 'bold',
   },
 });
