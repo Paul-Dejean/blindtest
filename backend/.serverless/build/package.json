@@ -1,0 +1,14 @@
+{
+  "name": "blindtest-backend",
+  "version": "1.0.0",
+  "description": "Backend for BlindTest game",
+  "main": "handler.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "serverless offline",
+    "deploy": "serverless deploy",
+    "build": "tsc",
+    "test:offline": "serverless invoke local -f collectSpotifyPlaylists"
+  },
+  "dependencies": {}
+}

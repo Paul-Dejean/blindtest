@@ -1,0 +1,32 @@
+service: blindtest-backend
+
+useDotenv: true
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: eu-west-3
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - s3:PutObject
+          Resource: "arn:aws:s3:::${env:BUCKET_NAME}/*"
+
+plugins:
+  - serverless-offline
+
+functions:
+  collectSpotifyPlaylists:
+    handler: src/functions/collectSpotifyPlaylists.handler
+    events:
+      - schedule: rate(7 days)
+    environment:
+      SPOTIFY_CLIENT_ID: ${env:SPOTIFY_CLIENT_ID}
+      SPOTIFY_CLIENT_SECRET: ${env:SPOTIFY_CLIENT_SECRET}
+      BUCKET_NAME: ${env:BUCKET_NAME}
+
+custom:
+  serverless-offline:
+    httpPort: 4000

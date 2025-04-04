@@ -1,0 +1,122 @@
+{
+  "/Users/paul/projects/blindtest/backend/serverless.yml": {
+    "versionFramework": "4.11.1",
+    "servicePath": "/Users/paul/projects/blindtest/backend/serverless.yml",
+    "serviceConfigFileName": "serverless.yml",
+    "service": {
+      "service": "blindtest-backend",
+      "useDotenv": true,
+      "provider": {
+        "name": "aws",
+        "runtime": "nodejs20.x",
+        "region": "eu-west-3",
+        "iam": {
+          "role": {
+            "statements": [
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "s3:PutObject"
+                ],
+                "Resource": "arn:aws:s3:::blindtest-playlists/*"
+              }
+            ]
+          }
+        },
+        "stage": "dev",
+        "versionFunctions": true,
+        "environment": {
+          "IS_LOCAL": "true"
+        }
+      },
+      "plugins": [
+        "serverless-offline"
+      ],
+      "functions": {
+        "collectSpotifyPlaylists": {
+          "handler": "src/functions/collectSpotifyPlaylists.handler",
+          "events": [
+            {
+              "schedule": "rate(7 days)"
+            }
+          ],
+          "environment": {
+            "SPOTIFY_CLIENT_ID": "e0731b132606425e9e22c039dc16cbb0",
+            "SPOTIFY_CLIENT_SECRET": "<REDACTED>",
+            "BUCKET_NAME": "blindtest-playlists",
+            "NODE_OPTIONS": "--enable-source-maps"
+          },
+          "name": "blindtest-backend-dev-collectSpotifyPlaylists"
+        }
+      },
+      "custom": {
+        "serverless-offline": {
+          "httpPort": 4000
+        }
+      }
+    },
+    "provider": {
+      "name": "aws",
+      "runtime": "nodejs20.x",
+      "region": "eu-west-3",
+      "iam": {
+        "role": {
+          "statements": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "s3:PutObject"
+              ],
+              "Resource": "arn:aws:s3:::blindtest-playlists/*"
+            }
+          ]
+        }
+      },
+      "stage": "dev",
+      "versionFunctions": true,
+      "environment": {
+        "IS_LOCAL": "true"
+      }
+    },
+    "dashboard": {
+      "isEnabledForService": false,
+      "requiredAuthentication": false,
+      "orgFeaturesInUse": null,
+      "orgObservabilityIntegrations": null,
+      "serviceAppId": null,
+      "serviceProvider": null,
+      "instanceParameters": null
+    },
+    "serviceRawFile": "service: blindtest-backend\n\nuseDotenv: true\n\nprovider:\n  name: aws\n  runtime: nodejs20.x\n  region: eu-west-3\n  iam:\n    role:\n      statements:\n        - Effect: Allow\n          Action:\n            - s3:PutObject\n          Resource: \"arn:aws:s3:::${env:BUCKET_NAME}/*\"\n\nplugins:\n  - serverless-offline\n\nfunctions:\n  collectSpotifyPlaylists:\n    handler: src/functions/collectSpotifyPlaylists.handler\n    events:\n      - schedule: rate(7 days)\n    environment:\n      SPOTIFY_CLIENT_ID: ${env:SPOTIFY_CLIENT_ID}\n      SPOTIFY_CLIENT_SECRET: ${env:SPOTIFY_CLIENT_SECRET}\n      BUCKET_NAME: ${env:BUCKET_NAME}\n\ncustom:\n  serverless-offline:\n    httpPort: 4000\n",
+    "command": [
+      "invoke",
+      "local"
+    ],
+    "options": {
+      "function": "collectSpotifyPlaylists"
+    },
+    "orgId": "5739f81a-22a6-4876-8338-a4824a92c4b2",
+    "orgName": "pauldejean",
+    "userId": "3lhKtkBpqrF6SnB5pR",
+    "userName": "pauldejean",
+    "serviceProviderAwsAccountId": "311535938619",
+    "serviceProviderAwsCfStackName": "blindtest-backend-dev",
+    "serviceProviderAwsCfStackId": "arn:aws:cloudformation:eu-west-3:311535938619:stack/blindtest-backend-dev/4778bed0-107c-11f0-8a68-0ab0f3be870d",
+    "serviceProviderAwsCfStackCreated": "2025-04-03T11:10:41.316Z",
+    "serviceProviderAwsCfStackUpdated": null,
+    "serviceProviderAwsCfStackStatus": "CREATE_COMPLETE",
+    "serviceProviderAwsCfStackOutputs": [
+      {
+        "OutputKey": "CollectSpotifyPlaylistsLambdaFunctionQualifiedArn",
+        "OutputValue": "arn:aws:lambda:eu-west-3:311535938619:function:blindtest-backend-dev-collectSpotifyPlaylists:1",
+        "Description": "Current Lambda function version",
+        "ExportName": "sls-blindtest-backend-dev-CollectSpotifyPlaylistsLambdaFunctionQualifiedArn"
+      },
+      {
+        "OutputKey": "ServerlessDeploymentBucketName",
+        "OutputValue": "serverless-framework-deployments-eu-west-3-f912ae48-4908",
+        "ExportName": "sls-blindtest-backend-dev-ServerlessDeploymentBucketName"
+      }
+    ]
+  }
+}

@@ -1,0 +1,192 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "The AWS CloudFormation template for this Serverless application",
+  "Resources": {
+    "CollectSpotifyPlaylistsLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/blindtest-backend-dev-collectSpotifyPlaylists"
+      }
+    },
+    "IamRoleLambdaExecution": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "lambda.amazonaws.com"
+                ]
+              },
+              "Action": [
+                "sts:AssumeRole"
+              ]
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": {
+              "Fn::Join": [
+                "-",
+                [
+                  "blindtest-backend",
+                  "dev",
+                  "lambda"
+                ]
+              ]
+            },
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogStream",
+                    "logs:CreateLogGroup",
+                    "logs:TagResource"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/blindtest-backend-dev*:*"
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/blindtest-backend-dev*:*:*"
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:PutObject"
+                  ],
+                  "Resource": "arn:aws:s3:::blindtest-playlists/*"
+                }
+              ]
+            }
+          }
+        ],
+        "Path": "/",
+        "RoleName": {
+          "Fn::Join": [
+            "-",
+            [
+              "blindtest-backend",
+              "dev",
+              {
+                "Ref": "AWS::Region"
+              },
+              "lambdaRole"
+            ]
+          ]
+        }
+      }
+    },
+    "CollectSpotifyPlaylistsLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": "serverless-framework-deployments-eu-west-3-f912ae48-4908",
+          "S3Key": "serverless/blindtest-backend/dev/1743678633458-2025-04-03T11:10:33.458Z/blindtest-backend.zip"
+        },
+        "Handler": "src/functions/collectSpotifyPlaylists.handler",
+        "Runtime": "nodejs20.x",
+        "FunctionName": "blindtest-backend-dev-collectSpotifyPlaylists",
+        "MemorySize": 1024,
+        "Timeout": 6,
+        "Environment": {
+          "Variables": {
+            "SPOTIFY_CLIENT_ID": "e0731b132606425e9e22c039dc16cbb0",
+            "SPOTIFY_CLIENT_SECRET": "27392622f787483e81437676a3c3a722",
+            "BUCKET_NAME": "blindtest-playlists",
+            "NODE_OPTIONS": "--enable-source-maps"
+          }
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "IamRoleLambdaExecution",
+            "Arn"
+          ]
+        }
+      },
+      "DependsOn": [
+        "CollectSpotifyPlaylistsLogGroup"
+      ]
+    },
+    "CollectSpotifyPlaylistsLambdaVersioncRC1zt4iWFBxW1ASWe4rBkkeinRnU4KC88j4T2sJA": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "CollectSpotifyPlaylistsLambdaFunction"
+        },
+        "CodeSha256": "mK3Ivmr1WRXVfdLvVX1OKRDbSXSaUGMv+yCslxpIbbc="
+      }
+    },
+    "CollectSpotifyPlaylistsEventsRuleSchedule1": {
+      "Type": "AWS::Events::Rule",
+      "Properties": {
+        "ScheduleExpression": "rate(7 days)",
+        "State": "ENABLED",
+        "Targets": [
+          {
+            "Arn": {
+              "Fn::GetAtt": [
+                "CollectSpotifyPlaylistsLambdaFunction",
+                "Arn"
+              ]
+            },
+            "Id": "collectSpotifyPlaylistsSchedule"
+          }
+        ]
+      }
+    },
+    "CollectSpotifyPlaylistsLambdaPermissionEventsRuleSchedule1": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "CollectSpotifyPlaylistsLambdaFunction",
+            "Arn"
+          ]
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "events.amazonaws.com",
+        "SourceArn": {
+          "Fn::GetAtt": [
+            "CollectSpotifyPlaylistsEventsRuleSchedule1",
+            "Arn"
+          ]
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "ServerlessDeploymentBucketName": {
+      "Value": "serverless-framework-deployments-eu-west-3-f912ae48-4908",
+      "Export": {
+        "Name": "sls-blindtest-backend-dev-ServerlessDeploymentBucketName"
+      }
+    },
+    "CollectSpotifyPlaylistsLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "CollectSpotifyPlaylistsLambdaVersioncRC1zt4iWFBxW1ASWe4rBkkeinRnU4KC88j4T2sJA"
+      },
+      "Export": {
+        "Name": "sls-blindtest-backend-dev-CollectSpotifyPlaylistsLambdaFunctionQualifiedArn"
+      }
+    }
+  }
+}

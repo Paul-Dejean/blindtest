@@ -1,0 +1,26 @@
+{
+  "name": "blindtest-backend",
+  "version": "1.0.0",
+  "description": "Backend for BlindTest game",
+  "main": "handler.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "serverless offline",
+    "deploy": "serverless deploy",
+    "build": "tsc",
+    "test:offline": "serverless invoke local -f collectSpotifyPlaylists"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.1499.0",
+    "axios": "^1.6.2",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.119",
+    "@types/node": "^20.10.5",
+    "ajv": "^8.12.0",
+    "serverless": "^4.11.1",
+    "serverless-offline": "^14.4.0",
+    "typescript": "^5.3.3"
+  }
+}
