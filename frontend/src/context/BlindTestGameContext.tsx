@@ -348,7 +348,6 @@ export function BlindTestGameProvider({ children, config }: BlindTestGameProvide
     setTimeout(async () => {
       await stopTrack();
       await nextTrack();
-      resetTimer();
     }, 2000);
   }
 
@@ -382,7 +381,6 @@ export function BlindTestGameProvider({ children, config }: BlindTestGameProvide
       if (gameState.titleCorrect) {
         setTimeout(async () => {
           await nextTrack();
-          resetTimer();
         }, 2000);
       }
     }
@@ -418,7 +416,6 @@ export function BlindTestGameProvider({ children, config }: BlindTestGameProvide
       if (gameState.artistCorrect) {
         setTimeout(async () => {
           await nextTrack();
-          resetTimer();
         }, 2000);
       }
     }
@@ -432,6 +429,7 @@ export function BlindTestGameProvider({ children, config }: BlindTestGameProvide
     if (currentTrack && currentTrack.preview) {
       console.log('Playing current track:', currentTrack.title);
       playTrack(currentTrack.preview);
+      resetTimer();
     }
   }, [currentTrack]);
 
