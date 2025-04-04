@@ -16,9 +16,9 @@ const getDurationFromDifficulty = (difficulty: GameDifficulty): number => {
     case GameDifficulty.EASY:
       return 30;
     case GameDifficulty.MEDIUM:
-      return 15;
+      return 20;
     case GameDifficulty.HARD:
-      return 5;
+      return 10;
     default:
       return 30;
   }
