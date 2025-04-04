@@ -23,6 +23,8 @@ export default function GameSummaryScreen() {
     artist: track.track?.artist?.name || track.artist,
     artistCorrect: track.artistCorrect,
     titleCorrect: track.titleCorrect,
+    artistAnswerTime: track.artistAnswerTime || null,
+    titleAnswerTime: track.titleAnswerTime || null,
   }));
 
   return (

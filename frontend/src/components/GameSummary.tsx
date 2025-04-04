@@ -7,6 +7,8 @@ interface TrackResult {
   artist: string;
   artistCorrect: boolean;
   titleCorrect: boolean;
+  artistAnswerTime: number | null;
+  titleAnswerTime: number | null;
 }
 
 interface GameSummaryProps {
@@ -14,6 +16,12 @@ interface GameSummaryProps {
   score: number;
   isMultiplayer?: boolean;
 }
+
+// Helper to format milliseconds to seconds
+const formatTime = (ms: number | null): string => {
+  if (ms === null) return '-';
+  return (ms / 1000).toFixed(1) + 's';
+};
 
 export const GameSummary = ({ tracks, score, isMultiplayer = false }: GameSummaryProps) => {
   const router = useRouter();
@@ -37,22 +45,22 @@ export const GameSummary = ({ tracks, score, isMultiplayer = false }: GameSummar
           <View key={index} style={styles.trackItem}>
             <Text style={styles.trackNumber}>#{index + 1}</Text>
             <View style={styles.trackDetails}>
-              <Text style={styles.trackTitle}>
-                {track.title}{' '}
+              <View style={styles.trackResultRow}>
+                <Text style={styles.trackTitle}>{track.title} </Text>
                 {track.titleCorrect ? (
-                  <Text style={styles.correct}>✓</Text>
+                  <Text style={styles.correct}>✓ {formatTime(track.titleAnswerTime)}</Text>
                 ) : (
                   <Text style={styles.incorrect}>✗</Text>
                 )}
-              </Text>
-              <Text style={styles.trackArtist}>
-                {track.artist}{' '}
+              </View>
+              <View style={styles.trackResultRow}>
+                <Text style={styles.trackArtist}>{track.artist} </Text>
                 {track.artistCorrect ? (
-                  <Text style={styles.correct}>✓</Text>
+                  <Text style={styles.correct}>✓ {formatTime(track.artistAnswerTime)}</Text>
                 ) : (
                   <Text style={styles.incorrect}>✗</Text>
                 )}
-              </Text>
+              </View>
             </View>
           </View>
         ))}
@@ -106,6 +114,12 @@ const styles = StyleSheet.create({
   trackDetails: {
     flex: 1,
   },
+  trackResultRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
   trackTitle: {
     fontSize: 18,
     fontWeight: 'bold',
@@ -114,7 +128,6 @@ const styles = StyleSheet.create({
   trackArtist: {
     fontSize: 16,
     color: '#ddd',
-    marginTop: 5,
   },
   correct: {
     color: '#4ade80',

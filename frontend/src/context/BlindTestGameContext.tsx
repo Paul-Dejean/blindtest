@@ -239,11 +239,13 @@ export function BlindTestGameProvider({ children, config }: BlindTestGameProvide
         totalSongs: gameTracks.length,
         maxScore: gameTracks.length * 2, // Only counting title and artist as 1 point each
         trackResults: finalTrackResults.map((result) => ({
-          // Only save essential data to reduce storage size
+          // Include all necessary data
           title: result.track.title,
           artist: result.track.artist.name,
           artistCorrect: result.artistCorrect,
           titleCorrect: result.titleCorrect,
+          artistAnswerTime: result.artistAnswerTime,
+          titleAnswerTime: result.titleAnswerTime,
         })),
         isMultiplayer,
       };
@@ -261,6 +263,8 @@ export function BlindTestGameProvider({ children, config }: BlindTestGameProvide
         },
         artistCorrect: result.artistCorrect,
         titleCorrect: result.titleCorrect,
+        artistAnswerTime: result.artistAnswerTime,
+        titleAnswerTime: result.titleAnswerTime,
       }));
 
       router.push({

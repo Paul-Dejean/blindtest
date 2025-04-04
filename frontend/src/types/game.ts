@@ -52,6 +52,8 @@ export interface GameHistory {
     artist: string;
     artistCorrect: boolean;
     titleCorrect: boolean;
+    artistAnswerTime: number | null;
+    titleAnswerTime: number | null;
   }[];
   isMultiplayer: boolean;
 }
