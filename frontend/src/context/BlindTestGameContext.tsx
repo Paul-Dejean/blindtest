@@ -183,6 +183,7 @@ export function BlindTestGameProvider({ children, config }: BlindTestGameProvide
   }
 
   async function onGameEnd(trackResults: TrackResult[]) {
+    await stopTrackIfPlaying();
     const finalScore = gameState.score;
 
     console.log('finalTrackResults', trackResults);

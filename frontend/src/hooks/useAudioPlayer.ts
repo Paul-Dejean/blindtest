@@ -46,7 +46,6 @@ export const useAudioPlayer = ({ onPlaybackStatusUpdate }: UseAudioPlayerProps =
     // Clean up any previous sound
     if (sound) {
       try {
-        await sound.stopAsync();
         await sound.unloadAsync();
       } catch (err) {
         console.error(`Error stopping track:`, err);
@@ -96,7 +95,6 @@ export const useAudioPlayer = ({ onPlaybackStatusUpdate }: UseAudioPlayerProps =
     if (!sound) return;
 
     try {
-      await sound.stopAsync();
       await sound.unloadAsync();
     } catch (err) {
       console.error(`Error stopping track:`, err);
