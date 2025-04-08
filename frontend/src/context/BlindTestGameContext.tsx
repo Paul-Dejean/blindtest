@@ -42,22 +42,12 @@ interface BlindTestGameContextType {
   titleInputRef: React.RefObject<TextInput>;
 
   // Actions
-  setGameState: React.Dispatch<React.SetStateAction<GameState>>;
   handleMenuPress: () => Promise<void>;
   skipTrack: () => Promise<void>;
-  nextTrack: () => Promise<void>;
   submitArtistGuess: () => void;
   submitTitleGuess: () => void;
   restartGame: () => void;
-  updateTrackResult: (
-    track: Track,
-    updates: {
-      artistCorrect?: boolean;
-      titleCorrect?: boolean;
-      artistAnswerTime?: number | null;
-      titleAnswerTime?: number | null;
-    }
-  ) => void;
+  setGameState: React.Dispatch<React.SetStateAction<GameState>>;
 }
 
 const ANSWER_DELAY = 2000;
@@ -122,6 +112,15 @@ export function BlindTestGameProvider({ children, config }: BlindTestGameProvide
     },
   });
 
+  useEffect(() => {
+    async function start() {
+      if (!tracks.length) return;
+      await playTrack(tracks[0].preview);
+      resetTimer();
+    }
+
+    start();
+  }, [tracks]);
   const updateTrackResult = (
     track: Track,
     updates: {
@@ -145,12 +144,14 @@ export function BlindTestGameProvider({ children, config }: BlindTestGameProvide
         ...updates,
       };
       currentResults[currentIndex] = newResult;
+      console.log('currentResults', currentResults);
       return currentResults;
     });
   };
 
   async function showAnswerPanel() {
     const currentTrack = getCurrentTrack();
+    console.log('currentTrack', currentTrack);
     updateTrackResult(currentTrack, {
       artistCorrect: gameState.artistCorrect,
       titleCorrect: gameState.titleCorrect,
@@ -161,21 +162,37 @@ export function BlindTestGameProvider({ children, config }: BlindTestGameProvide
       showAnswer: true,
     }));
 
+    if (gameState.currentTrackIndex === tracks.length - 1) {
+      const finalTrackResults = [...trackResults];
+      if (!finalTrackResults[gameState.currentTrackIndex]) {
+        finalTrackResults[gameState.currentTrackIndex] = {
+          track: currentTrack,
+          artistCorrect: gameState.artistCorrect,
+          titleCorrect: gameState.titleCorrect,
+          artistAnswerTime: null,
+          titleAnswerTime: null,
+        };
+      }
+      setTimeout(() => onGameEnd(finalTrackResults), 1000);
+      return;
+    }
+
     setTimeout(async () => {
       await nextTrack();
     }, ANSWER_DELAY);
   }
 
-  async function onGameEnd() {
+  async function onGameEnd(trackResults: TrackResult[]) {
     const finalScore = gameState.score;
-    const finalTrackResults = [...trackResults];
+
+    console.log('finalTrackResults', trackResults);
 
     const gameHistory: GameHistory = {
       timestamp: Date.now(),
       score: finalScore,
       totalSongs: tracks.length,
-      maxScore: tracks.length * 2, // Only counting title and artist as 1 point each
-      trackResults: finalTrackResults.map((result) => ({
+      maxScore: tracks.length * 2,
+      trackResults: trackResults.map((result) => ({
         // Include all necessary data
         title: result.track.title,
         artist: result.track.artist.name,
@@ -190,7 +207,7 @@ export function BlindTestGameProvider({ children, config }: BlindTestGameProvide
     try {
       await saveGameToHistory(gameHistory);
 
-      const summaryTracks = finalTrackResults.map((result) => ({
+      const summaryTracks = trackResults.map((result) => ({
         track: {
           title: result.track.title,
           artist: {
@@ -226,10 +243,6 @@ export function BlindTestGameProvider({ children, config }: BlindTestGameProvide
 
   async function nextTrack() {
     await stopTrackIfPlaying();
-    if (gameState.currentTrackIndex === tracks.length - 1) {
-      await onGameEnd();
-      return;
-    }
 
     setGameState((prev) => ({
       ...prev,
@@ -245,9 +258,15 @@ export function BlindTestGameProvider({ children, config }: BlindTestGameProvide
     }));
 
     artistInputRef.current?.focus();
+    const nextTrack = tracks[gameState.currentTrackIndex + 1];
+    console.log('next');
+    await playTrack(nextTrack.preview);
+    resetTimer();
   }
 
   async function stopTrackIfPlaying() {
+    console.log('STOPPING');
+    console.log('stopTrackIfPlaying', isPlaying);
     if (!isPlaying) return;
     try {
       await stopTrack();
@@ -314,8 +333,8 @@ export function BlindTestGameProvider({ children, config }: BlindTestGameProvide
     const isCorrect = isCorrectGuess(gameState.titleGuess, currentTrack.title);
     const answerTime = Date.now() - gameState.startTime;
     updateTrackResult(currentTrack, {
-      artistCorrect: isCorrect,
-      artistAnswerTime: isCorrect ? answerTime : null,
+      titleCorrect: isCorrect,
+      titleAnswerTime: isCorrect ? answerTime : null,
     });
     if (!isCorrect) {
       setGameState((prev) => ({
@@ -342,14 +361,6 @@ export function BlindTestGameProvider({ children, config }: BlindTestGameProvide
 
   const currentTrack = tracks[gameState.currentTrackIndex] || null;
 
-  useEffect(() => {
-    if (currentTrack && currentTrack.preview) {
-      console.log('Playing current track:', currentTrack.title);
-      playTrack(currentTrack.preview);
-      resetTimer();
-    }
-  }, [currentTrack]);
-
   return (
     <BlindTestGameContext.Provider
       value={{
@@ -367,11 +378,9 @@ export function BlindTestGameProvider({ children, config }: BlindTestGameProvide
         setGameState,
         handleMenuPress,
         skipTrack,
-        nextTrack,
         submitArtistGuess,
         submitTitleGuess,
         restartGame,
-        updateTrackResult,
       }}>
       {children}
     </BlindTestGameContext.Provider>
