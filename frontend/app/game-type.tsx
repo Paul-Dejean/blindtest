@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { GameTypeScreen } from '../src/components/menus/GameTypeScreen';
 import { GameMode, GameType as GameTypeEnum, GameDifficulty, GameConfig } from '../src/types/game';
 
@@ -39,15 +40,28 @@ export default function GameType() {
   };
 
   return (
-    <View style={styles.container}>
-      <GameTypeScreen gameMode={mode} onSelectGameType={handleSelectGameType} onBack={handleBack} />
-    </View>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <GameTypeScreen
+          gameMode={mode}
+          onSelectGameType={handleSelectGameType}
+          onBack={handleBack}
+        />
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#111827',
+  },
   container: {
     flex: 1,
     backgroundColor: '#111827',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
   },
 });

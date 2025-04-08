@@ -1,7 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
+
 import axios from 'axios';
 
-interface Track {
+import { Track } from '~/types/track';
+
+interface PlaylistTrack {
   name: string;
   artist: string;
 }
@@ -16,10 +19,10 @@ interface iTunesTrack {
   trackTimeMillis: number;
 }
 
-interface TracksData {
+interface PlaylistTracksData {
   date: string;
   tracksByGenre: {
-    [key: string]: Track[];
+    [key: string]: PlaylistTrack[];
   };
 }
 
@@ -32,7 +35,7 @@ interface UseTracksProps {
 const iTunesCache = new Map<string, iTunesTrack | null>();
 
 // Helper function to search iTunes API with rate limiting
-const searchItunes = async (track: Track): Promise<iTunesTrack | null> => {
+const searchItunes = async (track: PlaylistTrack): Promise<iTunesTrack | null> => {
   const cacheKey = `${track.name}-${track.artist}`;
 
   // Check cache first
@@ -73,20 +76,20 @@ const shuffleArray = <T>(array: T[]): T[] => {
 };
 
 export const useTracks = ({ genre = 'all', numberOfTracks }: UseTracksProps) => {
-  const [tracks, setTracks] = useState<TracksData | null>(null);
+  const [playlistTracks, setPlaylistTracks] = useState<PlaylistTracksData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const [iTunesTracks, setItunesTracks] = useState<iTunesTrack[]>([]);
+  const [tracks, setTracks] = useState<Track[]>([]);
 
   // Fetch tracks from JSON file
   useEffect(() => {
     const fetchTracks = async () => {
       try {
-        const response = await axios.get<TracksData>(
+        const response = await axios.get<PlaylistTracksData>(
           'https://blindtest.pauldejean.dev/tracks.json'
         );
         console.log('set tracks');
-        setTracks(response.data);
+        setPlaylistTracks(response.data);
       } catch (err) {
         setError(err instanceof Error ? err : new Error('Failed to fetch tracks'));
       } finally {
@@ -98,15 +101,15 @@ export const useTracks = ({ genre = 'all', numberOfTracks }: UseTracksProps) => 
   }, []);
 
   // Get tracks based on genre
-  let selectedTracks: Track[] = [];
+  let selectedTracks: PlaylistTrack[] = [];
 
-  if (genre === 'all' && tracks) {
+  if (genre === 'all' && playlistTracks) {
     // If genre is 'all', combine all tracks from all genres
-    const allTracks = Object.values(tracks.tracksByGenre).flat();
+    const allTracks = Object.values(playlistTracks.tracksByGenre || {}).flat();
     selectedTracks = shuffleArray(allTracks);
-  } else if (tracks?.tracksByGenre[genre]) {
+  } else if (playlistTracks?.tracksByGenre[genre]) {
     // If specific genre, get tracks from that genre
-    selectedTracks = shuffleArray(tracks.tracksByGenre[genre]);
+    selectedTracks = shuffleArray(playlistTracks.tracksByGenre[genre]);
   }
 
   // Take the specified number of tracks
@@ -120,12 +123,12 @@ export const useTracks = ({ genre = 'all', numberOfTracks }: UseTracksProps) => 
       try {
         // Process tracks in batches to avoid overwhelming the API
 
-        const allResults: iTunesTrack[] = [];
+        const allTracks: iTunesTrack[] = [];
         for (const track of selectedTracks) {
           const result = await searchItunes(track);
           if (result !== null) {
-            allResults.push(result);
-            if (allResults.length === numberOfTracks) {
+            allTracks.push(result);
+            if (allTracks.length === numberOfTracks) {
               break;
             }
           }
@@ -135,7 +138,21 @@ export const useTracks = ({ genre = 'all', numberOfTracks }: UseTracksProps) => 
           await new Promise((resolve) => setTimeout(resolve, 10));
         }
 
-        setItunesTracks(allResults);
+        const convertedTracks: Track[] = allTracks.map((track) => ({
+          id: track.trackId.toString(),
+          title: track.trackName,
+          artist: {
+            name: track.artistName,
+          },
+          album: {
+            title: track.collectionName,
+            coverMedium: track.artworkUrl100,
+          },
+          duration: track.trackTimeMillis,
+          preview: track.previewUrl,
+        }));
+
+        setTracks(convertedTracks);
 
         // Update refs
       } catch (err) {
@@ -146,10 +163,10 @@ export const useTracks = ({ genre = 'all', numberOfTracks }: UseTracksProps) => 
     };
 
     fetchItunesData();
-  }, [genre, numberOfTracks, tracks]);
+  }, [genre, numberOfTracks, playlistTracks]);
 
   return {
-    tracks: iTunesTracks,
+    tracks,
     isLoading: loading,
     error,
   };

@@ -48,9 +48,10 @@ export const useAudioPlayer = ({ onPlaybackStatusUpdate }: UseAudioPlayerProps =
       try {
         await sound.stopAsync();
         await sound.unloadAsync();
-      } catch (err) {}
+      } catch (err) {
+        console.error(`Error stopping track:`, err);
+      }
       setSound(null);
-      setIsPlaying(false);
     }
 
     // Set current track
@@ -64,10 +65,9 @@ export const useAudioPlayer = ({ onPlaybackStatusUpdate }: UseAudioPlayerProps =
       );
 
       setSound(newSound);
-      setIsPlaying(true);
     } catch (err) {
       console.error(`Error playing track:`, err);
-      setIsPlaying(false);
+
       setError(`Error playing track: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
   };
@@ -98,11 +98,12 @@ export const useAudioPlayer = ({ onPlaybackStatusUpdate }: UseAudioPlayerProps =
     try {
       await sound.stopAsync();
       await sound.unloadAsync();
-    } catch (err) {}
+    } catch (err) {
+      console.error(`Error stopping track:`, err);
+    }
 
     setSound(null);
     currentTrackRef.current = null;
-    setIsPlaying(false);
   };
 
   return {

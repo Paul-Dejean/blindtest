@@ -6,7 +6,7 @@ export interface Track {
   };
   album: {
     title: string;
-    cover_medium: string;
+    coverMedium: string;
   };
   duration: number;
   preview: string;

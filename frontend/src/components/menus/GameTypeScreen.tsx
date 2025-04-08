@@ -82,7 +82,8 @@ export const GameTypeScreen: React.FC<GameTypeScreenProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    width: '100%',
+    maxWidth: 480,
     borderRadius: 24,
     backgroundColor: 'rgba(17, 24, 39, 0.8)',
     shadowColor: '#000',
@@ -98,14 +99,17 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     marginBottom: 32,
+    marginTop: 40,
+    position: 'relative',
   },
   backButtonContainer: {
     position: 'absolute',
     left: 0,
-    top: 4,
+    top: -36,
     backgroundColor: 'rgba(31, 41, 55, 0.8)',
     borderRadius: 20,
     padding: 10,
+    zIndex: 10,
   },
   title: {
     fontSize: 32,

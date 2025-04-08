@@ -1,40 +1,14 @@
 import { useRouter } from 'expo-router';
-import React, { createContext, ReactNode, useContext, useRef, useState, useEffect } from 'react';
+import React, { createContext, ReactNode, useContext, useEffect, useRef, useState } from 'react';
 import { TextInput } from 'react-native';
 
 import { useAudioPlayer } from '../hooks/useAudioPlayer';
+import { useTimer } from '../hooks/useTimer';
 import { useTracks } from '../hooks/useTracks';
-
-import { GameConfig, GameMode, GameHistory } from '../types/game';
+import { GameConfig, GameHistory, GameMode } from '../types/game';
 import { Track, TrackResult } from '../types/track';
 import { saveGameToHistory } from '../utils/storage';
 import { isCorrectGuess } from '../utils/stringComparison';
-import { useTimer } from '~/hooks/useTimer';
-
-interface iTunesTrack {
-  trackId: number;
-  trackName: string;
-  artistName: string;
-  collectionName: string;
-  artworkUrl100: string;
-  previewUrl: string;
-  trackTimeMillis: number;
-}
-
-// Convert iTunes track to our Track format
-const convertToTrack = (iTunesTrack: iTunesTrack): Track => ({
-  id: iTunesTrack.trackId.toString(),
-  title: iTunesTrack.trackName,
-  artist: {
-    name: iTunesTrack.artistName,
-  },
-  album: {
-    title: iTunesTrack.collectionName,
-    cover_medium: iTunesTrack.artworkUrl100,
-  },
-  duration: iTunesTrack.trackTimeMillis,
-  preview: iTunesTrack.previewUrl,
-});
 
 interface GameState {
   currentTrackIndex: number;
@@ -57,7 +31,7 @@ interface BlindTestGameContextType {
   trackResults: TrackResult[];
 
   // Derived values
-  gameTracks: Track[];
+  tracks: Track[];
   isLoading: boolean;
   error: string | null;
   isPlaying: boolean;
@@ -75,7 +49,6 @@ interface BlindTestGameContextType {
   submitArtistGuess: () => void;
   submitTitleGuess: () => void;
   restartGame: () => void;
-  handleBackToMenu: () => void;
   updateTrackResult: (
     track: Track,
     updates: {
@@ -87,7 +60,24 @@ interface BlindTestGameContextType {
   ) => void;
 }
 
+const ANSWER_DELAY = 2000;
+
 const BlindTestGameContext = createContext<BlindTestGameContextType | undefined>(undefined);
+
+function createInitialGameState(): GameState {
+  return {
+    currentTrackIndex: 0,
+    score: 0,
+    showAnswer: false,
+    artistGuess: '',
+    titleGuess: '',
+    artistError: null,
+    titleError: null,
+    artistCorrect: false,
+    titleCorrect: false,
+    startTime: Date.now(),
+  };
+}
 
 export function useBlindTestGameContext() {
   const context = useContext(BlindTestGameContext);
@@ -107,59 +97,31 @@ export function BlindTestGameProvider({ children, config }: BlindTestGameProvide
 
   const isMultiplayer = config.mode === GameMode.MULTI_PLAYER;
 
-  // Get genre from config or default to 'all'
-  const genre = config.genre || 'all';
-
-  // Hooks
   const {
-    tracks: iTunesTracks,
+    tracks,
     isLoading,
     error: tracksError,
-  } = useTracks({ genre, numberOfTracks: config.songsCount });
+  } = useTracks({ genre: config.genre, numberOfTracks: config.songsCount });
 
   const { isPlaying, error: audioError, playTrack, stopTrack } = useAudioPlayer();
 
-  // Combine errors from different sources
   const error = (audioError || tracksError)?.toString() || null;
 
-  // Refs
   const artistInputRef = useRef<TextInput>(null);
   const titleInputRef = useRef<TextInput>(null);
 
-  // State
   const [trackResults, setTrackResults] = useState<TrackResult[]>([]);
 
-  const [gameState, setGameState] = useState<GameState>({
-    currentTrackIndex: 0,
-    score: 0,
-    showAnswer: false,
-    artistGuess: '',
-    titleGuess: '',
-    artistError: null,
-    titleError: null,
-    artistCorrect: false,
-    titleCorrect: false,
-    startTime: Date.now(),
-  });
+  const [gameState, setGameState] = useState<GameState>(createInitialGameState());
 
   const { timeLeft, resetTimer } = useTimer({
     duration: config.songDuration,
     isRunning: true,
     onTimerEnd: () => {
-      // Show the answer first
-      setGameState((prev) => ({
-        ...prev,
-        showAnswer: true,
-      }));
-
-      // Then skip to next track after a delay
-      setTimeout(() => {
-        skipTrack();
-      }, 2000);
+      showAnswerPanel();
     },
   });
 
-  // Centralized function to update track results
   const updateTrackResult = (
     track: Track,
     updates: {
@@ -173,9 +135,7 @@ export function BlindTestGameProvider({ children, config }: BlindTestGameProvide
       const currentResults = [...prev];
       const currentIndex = gameState.currentTrackIndex;
 
-      // Get existing result or create a new one
       const existingResult = currentResults[currentIndex];
-
       const newResult: TrackResult = {
         track,
         artistCorrect: existingResult?.artistCorrect || false,
@@ -184,76 +144,52 @@ export function BlindTestGameProvider({ children, config }: BlindTestGameProvide
         titleAnswerTime: existingResult?.titleAnswerTime || null,
         ...updates,
       };
-
       currentResults[currentIndex] = newResult;
       return currentResults;
     });
   };
 
-  // Filter tracks based on game mode and config
-  const gameTracks = React.useMemo(() => {
-    if (!iTunesTracks) return [];
+  async function showAnswerPanel() {
+    const currentTrack = getCurrentTrack();
+    updateTrackResult(currentTrack, {
+      artistCorrect: gameState.artistCorrect,
+      titleCorrect: gameState.titleCorrect,
+    });
 
-    const filteredTracks = iTunesTracks.map(convertToTrack);
+    setGameState((prev) => ({
+      ...prev,
+      showAnswer: true,
+    }));
 
-    // Determine number of songs based on config
-    const songsCount = config.songsCount || 10;
-    return filteredTracks.slice(0, songsCount);
-  }, [iTunesTracks, config]);
+    setTimeout(async () => {
+      await nextTrack();
+    }, ANSWER_DELAY);
+  }
 
-  // Function to move to next track
-  async function nextTrack() {
-    const isLastTrack = gameState.currentTrackIndex === gameTracks.length - 1;
+  async function onGameEnd() {
+    const finalScore = gameState.score;
+    const finalTrackResults = [...trackResults];
 
-    // Get current track
-    const currentTrack = gameTracks[gameState.currentTrackIndex];
-    if (!currentTrack) return;
+    const gameHistory: GameHistory = {
+      timestamp: Date.now(),
+      score: finalScore,
+      totalSongs: tracks.length,
+      maxScore: tracks.length * 2, // Only counting title and artist as 1 point each
+      trackResults: finalTrackResults.map((result) => ({
+        // Include all necessary data
+        title: result.track.title,
+        artist: result.track.artist.name,
+        artistCorrect: result.artistCorrect,
+        titleCorrect: result.titleCorrect,
+        artistAnswerTime: result.artistAnswerTime,
+        titleAnswerTime: result.titleAnswerTime,
+      })),
+      isMultiplayer,
+    };
 
-    // Ensure the current track is saved in results (especially important for the last track)
-    if (!trackResults[gameState.currentTrackIndex]) {
-      updateTrackResult(currentTrack, {});
-    }
-
-    if (isLastTrack) {
-      // Calculate final score
-      const finalScore = gameState.score;
-
-      // Ensure we have results for all tracks
-      let finalTrackResults = [...trackResults];
-
-      // If we're missing the last track result, add it now
-      if (!finalTrackResults[gameState.currentTrackIndex]) {
-        finalTrackResults[gameState.currentTrackIndex] = {
-          track: currentTrack,
-          artistCorrect: gameState.artistCorrect,
-          titleCorrect: gameState.titleCorrect,
-          artistAnswerTime: null,
-          titleAnswerTime: null,
-        };
-      }
-
-      // Record game history
-      const gameHistory: GameHistory = {
-        timestamp: Date.now(),
-        score: finalScore,
-        totalSongs: gameTracks.length,
-        maxScore: gameTracks.length * 2, // Only counting title and artist as 1 point each
-        trackResults: finalTrackResults.map((result) => ({
-          // Include all necessary data
-          title: result.track.title,
-          artist: result.track.artist.name,
-          artistCorrect: result.artistCorrect,
-          titleCorrect: result.titleCorrect,
-          artistAnswerTime: result.artistAnswerTime,
-          titleAnswerTime: result.titleAnswerTime,
-        })),
-        isMultiplayer,
-      };
-
-      // Save and navigate to summary
+    try {
       await saveGameToHistory(gameHistory);
 
-      // Format track results for the summary screen
       const summaryTracks = finalTrackResults.map((result) => ({
         track: {
           title: result.track.title,
@@ -275,156 +211,137 @@ export function BlindTestGameProvider({ children, config }: BlindTestGameProvide
           isMultiplayer: isMultiplayer.toString(),
         },
       });
-    } else {
-      // Move to next track
-      setGameState((prev) => ({
-        ...prev,
-        currentTrackIndex: prev.currentTrackIndex + 1,
-        showAnswer: false,
-        artistGuess: '',
-        titleGuess: '',
-        artistError: null,
-        titleError: null,
-        artistCorrect: false,
-        titleCorrect: false,
-      }));
-    }
-  }
-
-  // Function to handle menu press
-  async function handleMenuPress() {
-    try {
-      console.log('Menu button pressed, stopping playback');
-      await stopTrack();
-      console.log('Navigation to menu');
-      router.push('/');
     } catch (error) {
-      console.error('Error navigating to menu:', error);
-      // Fallback navigation
-      router.push('/');
+      console.error('Error navigating to game summary:', error);
     }
   }
 
-  // Function to handle back to menu
-  function handleBackToMenu() {
-    try {
-      console.log('Back to menu requested');
-      stopTrack(); // Stop any playing audio
-      router.push('/');
-    } catch (error) {
-      console.error('Error navigating back to menu:', error);
-      // Fallback navigation
-      router.push('/');
+  function getCurrentTrack() {
+    const currentTrack = tracks[gameState.currentTrackIndex];
+    if (!currentTrack) {
+      throw new Error('No current track');
     }
+    return currentTrack;
   }
 
-  // Function to restart game
-  function restartGame() {
-    setGameState({
-      currentTrackIndex: 0,
-      score: 0,
-      showAnswer: false,
+  async function nextTrack() {
+    await stopTrackIfPlaying();
+    if (gameState.currentTrackIndex === tracks.length - 1) {
+      await onGameEnd();
+      return;
+    }
+
+    setGameState((prev) => ({
+      ...prev,
+      currentTrackIndex: prev.currentTrackIndex + 1,
       artistGuess: '',
       titleGuess: '',
-      artistError: null,
-      titleError: null,
       artistCorrect: false,
       titleCorrect: false,
+      artistError: null,
+      titleError: null,
+      showAnswer: false,
       startTime: Date.now(),
-    });
+    }));
+
+    artistInputRef.current?.focus();
+  }
+
+  async function stopTrackIfPlaying() {
+    if (!isPlaying) return;
+    try {
+      await stopTrack();
+    } catch (error) {
+      console.error(`Error stopping track:`, error);
+    }
+  }
+
+  async function handleMenuPress() {
+    await stopTrackIfPlaying();
+    router.push('/');
+  }
+
+  function restartGame() {
+    setGameState(createInitialGameState());
     setTrackResults([]);
     router.push('/play');
   }
 
-  // Function to skip current track
   async function skipTrack() {
-    // First show the answer
-    setGameState((prev) => ({
-      ...prev,
-      showAnswer: true,
-    }));
-
-    // Wait 3 seconds before moving to next track
-    setTimeout(async () => {
-      await stopTrack();
-      await nextTrack();
-    }, 2000);
+    await showAnswerPanel();
   }
 
-  // Function to submit artist guess
-  function submitArtistGuess() {
-    const currentTrack = gameTracks[gameState.currentTrackIndex];
-    if (!currentTrack) return;
+  async function submitArtistGuess() {
+    if (!gameState.artistCorrect) return;
+    const currentTrack = getCurrentTrack();
 
     const isCorrect = isCorrectGuess(gameState.artistGuess, currentTrack.artist.name);
+
     const answerTime = Date.now() - gameState.startTime;
-
-    setGameState((prev) => ({
-      ...prev,
-      artistCorrect: isCorrect,
-      artistError: isCorrect ? null : 'Incorrect artist',
-    }));
-
     updateTrackResult(currentTrack, {
       artistCorrect: isCorrect,
       artistAnswerTime: isCorrect ? answerTime : null,
     });
 
-    if (isCorrect) {
+    if (!isCorrect) {
       setGameState((prev) => ({
         ...prev,
-        score: prev.score + 1,
-        showAnswer: true, // Show answer when correct
+        artistError: 'Incorrect artist',
+        artistGuess: '',
       }));
-
-      // If both artist and title are correct, move to next track after delay
-      if (gameState.titleCorrect) {
-        setTimeout(async () => {
-          await nextTrack();
-        }, 2000);
-      }
+      return;
     }
-  }
-
-  // Function to submit title guess
-  function submitTitleGuess() {
-    const currentTrack = gameTracks[gameState.currentTrackIndex];
-    if (!currentTrack) return;
-
-    const isCorrect = isCorrectGuess(gameState.titleGuess, currentTrack.title);
-    const answerTime = Date.now() - gameState.startTime;
 
     setGameState((prev) => ({
       ...prev,
-      titleCorrect: isCorrect,
-      titleError: isCorrect ? null : 'Incorrect title',
+      artistCorrect: true,
+      artistError: null,
+      score: prev.score + 1,
     }));
 
-    updateTrackResult(currentTrack, {
-      titleCorrect: isCorrect,
-      titleAnswerTime: isCorrect ? answerTime : null,
-    });
-
-    if (isCorrect) {
-      setGameState((prev) => ({
-        ...prev,
-        score: prev.score + 1,
-        showAnswer: true, // Show answer when correct
-      }));
-
-      // If both artist and title are correct, move to next track after delay
-      if (gameState.artistCorrect) {
-        setTimeout(async () => {
-          await nextTrack();
-        }, 2000);
-      }
+    if (!gameState.titleCorrect) {
+      titleInputRef.current?.focus();
+      return;
     }
+
+    await showAnswerPanel();
   }
 
-  // Get current track
-  const currentTrack = gameTracks[gameState.currentTrackIndex] || null;
+  async function submitTitleGuess() {
+    if (gameState.titleCorrect) return;
+    const currentTrack = getCurrentTrack();
 
-  // Add this useEffect to play the track when currentTrack changes
+    const isCorrect = isCorrectGuess(gameState.titleGuess, currentTrack.title);
+    const answerTime = Date.now() - gameState.startTime;
+    updateTrackResult(currentTrack, {
+      artistCorrect: isCorrect,
+      artistAnswerTime: isCorrect ? answerTime : null,
+    });
+    if (!isCorrect) {
+      setGameState((prev) => ({
+        ...prev,
+        titleError: 'Incorrect title',
+        titleGuess: '',
+      }));
+      return;
+    }
+
+    setGameState((prev) => ({
+      ...prev,
+      score: prev.score + 2,
+      titleCorrect: true,
+      titleError: null,
+    }));
+
+    if (!gameState.artistCorrect) {
+      artistInputRef.current?.focus();
+      return;
+    }
+    await showAnswerPanel();
+  }
+
+  const currentTrack = tracks[gameState.currentTrackIndex] || null;
+
   useEffect(() => {
     if (currentTrack && currentTrack.preview) {
       console.log('Playing current track:', currentTrack.title);
@@ -440,7 +357,7 @@ export function BlindTestGameProvider({ children, config }: BlindTestGameProvide
         config,
         timeLeft,
         trackResults,
-        gameTracks,
+        tracks,
         isLoading,
         error,
         isPlaying,
@@ -454,7 +371,6 @@ export function BlindTestGameProvider({ children, config }: BlindTestGameProvide
         submitArtistGuess,
         submitTitleGuess,
         restartGame,
-        handleBackToMenu,
         updateTrackResult,
       }}>
       {children}

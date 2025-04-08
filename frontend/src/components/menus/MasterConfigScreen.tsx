@@ -186,6 +186,7 @@ export const MasterConfigScreen: React.FC<MasterConfigScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     width: '100%',
+    maxWidth: 480,
     overflow: 'hidden',
     borderRadius: 24,
     backgroundColor: 'rgba(31, 41, 55, 0.8)',
@@ -204,16 +205,19 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
   header: {
-    marginBottom: 32,
     alignItems: 'center',
+    marginBottom: 32,
+    marginTop: 40,
+    position: 'relative',
   },
   backButtonContainer: {
     position: 'absolute',
     left: 0,
-    top: 4,
-    borderRadius: 9999,
+    top: -36,
     backgroundColor: 'rgba(31, 41, 55, 0.8)',
+    borderRadius: 20,
     padding: 10,
+    zIndex: 10,
   },
   title: {
     fontSize: 24,

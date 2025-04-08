@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { MasterConfigScreen } from '../src/components/menus/MasterConfigScreen';
 import {
   GameDifficulty,
@@ -14,11 +15,11 @@ import {
 const getDurationFromDifficulty = (difficulty: GameDifficulty): number => {
   switch (difficulty) {
     case GameDifficulty.EASY:
-      return 30;
+      return 45;
     case GameDifficulty.MEDIUM:
-      return 20;
+      return 30;
     case GameDifficulty.HARD:
-      return 10;
+      return 15;
     default:
       return 30;
   }
@@ -70,22 +71,30 @@ export default function MasterConfig() {
   };
 
   return (
-    <View style={styles.container}>
-      <MasterConfigScreen
-        gameMode={mode as GameMode}
-        gameParams={gameParams}
-        onBack={handleBack}
-        onParamsChange={handleParamsChange}
-        onStartGame={handleStartGame}
-      />
-    </View>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <MasterConfigScreen
+          gameMode={mode as GameMode}
+          gameParams={gameParams}
+          onBack={handleBack}
+          onParamsChange={handleParamsChange}
+          onStartGame={handleStartGame}
+        />
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#111827',
+  },
   container: {
     flex: 1,
     backgroundColor: '#111827',
-    padding: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
   },
 });

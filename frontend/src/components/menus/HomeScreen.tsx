@@ -70,7 +70,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onCreateNewGame, onViewH
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    width: '100%',
+    maxWidth: 480,
     borderRadius: 24,
     backgroundColor: 'rgba(17, 24, 39, 0.8)',
     shadowColor: '#000',

@@ -14,7 +14,7 @@ import { AnswerDisplay } from './AnswerDisplay';
 export const BlindTestGame = () => {
   const {
     gameState,
-    gameTracks,
+    tracks,
     isLoading,
     isPlaying,
     currentTrack,
@@ -28,7 +28,7 @@ export const BlindTestGame = () => {
     handleMenuPress,
   } = useBlindTestGameContext();
 
-  if (isLoading || !gameTracks || gameTracks.length === 0) {
+  if (isLoading || !tracks || tracks.length === 0) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#0000ff" />
@@ -51,7 +51,7 @@ export const BlindTestGame = () => {
           </TouchableOpacity>
           <Text style={styles.headerText}>Score: {gameState.score}</Text>
           <Text style={styles.headerText}>
-            Track {gameState.currentTrackIndex + 1}/{gameTracks.length}
+            Track {gameState.currentTrackIndex + 1}/{tracks.length}
           </Text>
         </View>
       </View>
@@ -222,23 +222,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 40,
     backgroundColor: '#000',
+    width: '100%',
   },
   inputWrapper: {
-    width: '90%',
-    minWidth: 300,
-    marginHorizontal: 'auto',
+    width: '100%',
+    paddingHorizontal: 8,
     gap: 16,
   },
   inputRow: {
     flexDirection: 'row',
-    gap: 16,
+    gap: 8,
+    alignItems: 'center',
   },
   input: {
     flex: 1,
     borderRadius: 8,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingVertical: 12,
-    fontSize: 18,
+    fontSize: 16,
     color: '#fff',
     backgroundColor: '#1f2937',
   },
@@ -252,9 +253,10 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     borderRadius: 8,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingVertical: 12,
     backgroundColor: '#3b82f6',
+    width: 80,
   },
   submitButtonCorrect: {
     backgroundColor: '#059669',
@@ -265,14 +267,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   submitButtonText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: '#fff',
     opacity: 0,
   },
   submitButtonVisibleText: {
     position: 'absolute',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: '#fff',
     textAlign: 'center',
