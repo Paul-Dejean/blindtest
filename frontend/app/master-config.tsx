@@ -15,13 +15,13 @@ import {
 const getDurationFromDifficulty = (difficulty: GameDifficulty): number => {
   switch (difficulty) {
     case GameDifficulty.EASY:
-      return 30;
+      return 29;
     case GameDifficulty.MEDIUM:
-      return 20;
+      return 19;
     case GameDifficulty.HARD:
-      return 10;
+      return 9;
     default:
-      return 30;
+      return 29;
   }
 };
 
